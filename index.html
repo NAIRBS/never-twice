@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Never Twice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Fraunces:opsz,wght@9..144,100..900&family=Syne:wght@400..800&family=Space+Grotesk:wght@300..700&family=Unbounded:wght@200..900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky control strip, then a full-bleed fictional "specimen" site that CSS random() restyles, then a readout table of what this roll produced. */
+:root {
+  --ui-bg: #f2f3f5;
+  --ui-panel: #ffffff;
+  --ui-fg: #1b1d22;
+  --ui-muted: #5d6270;
+  --ui-line: #d9dce3;
+  --ui-accent: #3b4cca;
+  --ui-good: #1f7a4d;
+  --ui-warn: #9a5b00;
+
+  /* the specimen keeps lightness fixed per theme; only hue and chroma offsets are random */
+  --paper-l: 96.5%;
+  --ink-l: 23%;
+  --accent-l: 56%;
+
+  --font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ui-bg: #121318; --ui-panel: #1b1d24; --ui-fg: #e8e9ee; --ui-muted: #9a9fae;
+    --ui-line: #2e313b; --ui-accent: #8f9cff; --ui-good: #5fd39a; --ui-warn: #f0b45a;
+    --paper-l: 19%; --ink-l: 93%; --accent-l: 76%;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ui-bg: #121318; --ui-panel: #1b1d24; --ui-fg: #e8e9ee; --ui-muted: #9a9fae;
+  --ui-line: #2e313b; --ui-accent: #8f9cff; --ui-good: #5fd39a; --ui-warn: #f0b45a;
+  --paper-l: 19%; --ink-l: 93%; --accent-l: 76%;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--ui-bg); color: var(--ui-fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--ui-panel); }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1120px; margin-inline: auto; }
+
+/* ---------- control strip ---------- */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--ui-panel); border-bottom: 1px solid var(--ui-line); }
+.bar .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding-block: 10px; }
+.brand { font-weight: 600; letter-spacing: -0.01em; margin-right: auto; display: flex; align-items: baseline; gap: 10px; }
+.brand small { color: var(--ui-muted); font-weight: 400; font-size: 13px; }
+.chip { font-size: 12.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.chip.native { color: var(--ui-good); }
+.chip.standin { color: var(--ui-warn); }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ui-muted); cursor: pointer; }
+.toggle input { accent-color: var(--ui-accent); width: 16px; height: 16px; }
+button.reroll { font: 600 14px var(--font-ui); background: var(--ui-accent); color: var(--ui-panel); border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; }
+button.reroll:hover { filter: brightness(1.08); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* ---------- the specimen site ---------- */
+/* Pattern used below: a JS stand-in value first, then the random() declaration.
+   Browsers that understand random() use the second line; others drop it and keep the first. */
+.site {
+  --hue: var(--js-hue, 210deg);
+  --offset: var(--js-offset, 150deg);
+  --paper: oklch(var(--paper-l) 0.035 var(--hue));
+  --ink: oklch(var(--ink-l) 0.06 var(--hue));
+  --accent: oklch(var(--accent-l) 0.17 calc(var(--hue) + var(--offset)));
+  --soft: oklch(var(--paper-l) 0.07 calc(var(--hue) + var(--offset)));
+  position: relative; overflow: hidden;
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-display);
+  padding-block: 56px 72px;
+  transition: background-color .4s ease, color .4s ease;
+}
+/* Named key with no scope keyword: every use shares one value, so paper, ink and accent agree. */
+@supports (rotate: random(--probe, 0deg, 1deg)) {
+  .site {
+    --hue: random(--hue-key, 0deg, 360deg);
+    --offset: random(--offset-key, 90deg, 270deg, 30deg);
+  }
+}
+
+.blob {
+  position: absolute; z-index: 0; pointer-events: none;
+  background: var(--soft);
+  width: var(--js-bw, 14rem);                width: random(8rem, 22rem);
+  aspect-ratio: 1;
+  left: var(--js-bx, 60%);                   left: random(-5%, 75%);
+  top: var(--js-by, 5%);                     top: random(-15%, 45%);
+  border-radius: var(--js-br, 40% 60% 55% 45%);
+  border-radius: random(20%, 50%) random(20%, 50%) random(20%, 50%) random(20%, 50%);
+  rotate: var(--js-brot, 0deg);              rotate: random(0deg, 90deg);
+  animation: drift var(--js-bdur, 9s) ease-in-out infinite alternate;
+  animation-duration: random(6s, 14s);
+}
+.blob.two { opacity: .55; }
+@keyframes drift { to { translate: 0 1.5rem; scale: 1.06; } }
+@media (prefers-reduced-motion: reduce) { .blob { animation: none; } }
+
+.site .wrap { position: relative; z-index: 1; display: grid; gap: 40px; }
+
+.kicker { font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .75; }
+
+h1.title {
+  margin: 6px 0 0; line-height: .9;
+  font-size: min(var(--js-h1, 5rem), 13vw);     font-size: min(random(2.75rem, 6.5rem), 13vw);
+  font-weight: var(--js-h1w, 700);              font-weight: random(300, 800, 100);
+  letter-spacing: var(--js-h1ls, -0.02em);      letter-spacing: random(-0.05em, 0.08em);
+  text-wrap: balance;
+}
+h1.title .ch {
+  display: inline-block;
+  rotate: var(--js-r, 0deg);                    rotate: random(-10deg, 10deg);
+  translate: 0 var(--js-y, 0em);                translate: 0 random(-0.12em, 0.12em);
+}
+h1.title .word { white-space: nowrap; }
+
+.lede {
+  font-family: var(--font-ui); max-width: 40rem; margin: 0; display: grid; gap: .8em;
+  font-size: var(--js-lede, 1.15rem);           font-size: random(1rem, 1.35rem);
+}
+.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+.cta a {
+  font: 600 15px var(--font-ui); text-decoration: none; color: var(--paper); background: var(--ink);
+  padding: 11px 18px;
+  border-radius: var(--js-btn, 8px);            border-radius: random(0px, 26px);
+}
+.cta a.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.lede p { margin: 0; }
+
+.events {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--js-gap, 1.25rem);                  gap: random(0.75rem, 2.5rem);
+  list-style: none; margin: 0; padding: 0;
+}
+.card {
+  background: color-mix(in oklch, var(--paper) 70%, var(--soft));
+  border: solid var(--accent);
+  border-width: var(--js-bw2, 2px);             border-width: random(1px, 5px, 1px);
+  border-radius: var(--js-rad, 12px);           border-radius: random(0px, 30px);
+  padding: var(--js-pad, 1.25rem);              padding: random(0.9rem, 2rem);
+  rotate: var(--js-crot, 0deg);                 rotate: random(-3deg, 3deg);
+  display: grid; gap: 6px; align-content: start;
+  transition: rotate .3s ease;
+}
+.card:hover { rotate: 0deg; }
+.card .date { font-family: var(--font-mono); font-size: 12.5px; color: var(--accent); font-weight: 500; font-variant-numeric: tabular-nums; }
+.card h3 { margin: 0; font-size: 1.35rem; line-height: 1.15; font-weight: 650; text-wrap: balance; }
+.card p { margin: 0; font-family: var(--font-ui); font-size: 14px; opacity: .85; }
+
+/* ---------- JS layout picker: discrete choices random() cannot make ---------- */
+.site[data-layout="split"] .wrap { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; }
+.site[data-layout="split"] .events { grid-template-columns: 1fr; }
+.site[data-layout="poster"] .hero { text-align: center; justify-items: center; }
+.site[data-layout="poster"] .lede { margin-inline: auto; }
+.site[data-layout="poster"] .cta { justify-content: center; }
+.site[data-layout="poster"] .events { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.site[data-layout="poster"] .card { text-align: center; }
+.hero { display: grid; gap: 16px; }
+@media (max-width: 760px) {
+  .site[data-layout="split"] .wrap { grid-template-columns: 1fr; }
+}
+
+/* ---------- readout ---------- */
+.readout { padding-block: 36px 56px; }
+.readout h2 { font-size: 18px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.readout .sub { color: var(--ui-muted); margin: 0 0 18px; max-width: 65ch; }
+.table-scroll { overflow-x: auto; background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 10px; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 13.5px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--ui-line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--ui-muted); font-weight: 600; }
+td code { font-family: var(--font-mono); font-size: 12.5px; }
+td.val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--ui-line); }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 22px; }
+.notes p { margin: 0; color: var(--ui-muted); font-size: 14px; }
+.notes strong { color: var(--ui-fg); font-weight: 600; }
+</style>
+
+</head>
+<body>
+<header class="bar gutter">
+  <div class="wrap">
+    <div class="brand">Never Twice <small>a CSS random() demo</small></div>
+    <span id="support" class="chip">Checking support…</span>
+    <label class="toggle" for="layoutToggle"><input type="checkbox" id="layoutToggle"> Also shuffle layout and typeface (JS)</label>
+    <button class="reroll" id="reroll" type="button">Reroll</button>
+  </div>
+</header>
+
+<main>
+  <section class="site gutter" id="site" data-layout="stack" aria-label="Random copypasta restyled by random()">
+    <div class="blob" aria-hidden="true"></div>
+    <div class="blob two" aria-hidden="true"></div>
+    <div class="wrap">
+      <div class="hero">
+        <div class="kicker" id="kicker">Copypasta</div>
+        <h1 class="title" id="title"></h1>
+        <div class="lede" id="pasta"></div>
+        <div class="cta"><a href="#" id="copyBtn">Copy this pasta</a><a href="#replies" class="ghost">Read the replies</a></div>
+      </div>
+      <ul class="events" id="replies" aria-label="Replies"></ul>
+    </div>
+  </section>
+
+  <section class="readout gutter">
+    <div class="wrap">
+      <h2>This roll</h2>
+      <p class="sub" id="modeNote">Every value below came from a <code>random()</code> range in the stylesheet. Reroll to get a new set.</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>What</th><th>CSS that produced it</th><th>Value this time</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="notes">
+        <p><strong>Shared hue.</strong> Background, text and accent each call <code>random(--hue-key, …)</code>. A named key with no scope keyword shares one value across the page, so the colours always match.</p>
+        <p><strong>Per-element by default.</strong> Each letter of the title and each event card gets its own rotation, because plain <code>random()</code> is scoped per element, property and position.</p>
+        <p><strong>Readable on purpose.</strong> Only hue, size, spacing and angles are random. Lightness is fixed for each theme, so contrast holds on every roll.</p>
+        <p><strong>Where CSS stops.</strong> <code>random()</code> only returns numbers. Picking which pasta and replies to show, a layout or a font family are discrete choices, so a few lines of JS do those parts.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var site = document.getElementById('site');
+  var title = document.getElementById('title');
+  var toggle = document.getElementById('layoutToggle');
+  var supportChip = document.getElementById('support');
+  var modeNote = document.getElementById('modeNote');
+
+  // ---------- Content: picking text is a discrete choice, so JS does it ----------
+  var PASTAS = [
+    { t: 'It knows where it is', p: [
+      'The website knows where it is at all times. It knows this because it knows where it isn’t. By subtracting where it is from where it isn’t, or where it isn’t from where it is (whichever is greater), it obtains a difference, or deviation.',
+      'The stylesheet uses deviations to generate corrective random() calls to drive the page from a position where it is to a position where it isn’t, and arriving at a position where it wasn’t, it now is. Consequently, the position where it is, is now the position that it wasn’t.'] },
+    { t: 'Day 47', p: [
+      'Day 47 of asking my browser to support random(). Today it said “invalid declaration” and dropped it without even reading it.',
+      'I am not giving up. I have written the fallback. I have written the fallback for the fallback. My margin is var(--js-margin, var(--margin, 1rem)). I will be here tomorrow. Day 48.'] },
+    { t: 'Grandma’s margins', p: [
+      'Before we get to the stylesheet, I need to tell you about my grandmother. Every autumn she would sit by the window and set her margins by hand. Never the same twice. “A page should breathe,” she said, and then she said nothing else for four hours.',
+      'Anyway here is the recipe: margin-block: random(1rem, 5rem). Serves one page. Do not substitute with Math.random(), she would know.'] },
+    { t: 'Nobody: ', p: [
+      'Nobody:',
+      'Absolutely nobody:',
+      'Not a single person on this earth:',
+      'My border-radius on every reload: random(0px, 30px)'] },
+    { t: 'A formal apology', p: [
+      'I would like to formally apologize to everyone who loaded this page in the last five minutes. The heading was 7rem and tilted. That is not who I am.',
+      'I have spoken with my stylesheet. We have agreed on reasonable ranges. I cannot promise it will not happen again, because it is literally the point, but I wanted you to know I see you.'] },
+    { t: 'I have analyzed this page', p: [
+      'I have analyzed this page 6,000 times. Each time it was different. My colleagues say this is “by design.” My colleagues are not the ones who screenshotted a bug that then disappeared.',
+      'I am filing a ticket. The ticket will say: cannot reproduce. I will close it myself. This is my life now.'] },
+    { t: 'Hello I am a function', p: [
+      'Hello. I am random(). I was born in a spec draft and I have one job: return a number between two other numbers. People keep asking me to return a font. I cannot return a font. Please stop asking me to return a font.',
+      'If you need a font, ask random-item(). She is in the spec too. Nobody has seen her in a browser yet, but we believe in her.'] },
+    { t: 'Reload is a lifestyle', p: [
+      'Some people reload a page because it broke. I reload a page because it was teal and I wanted it to be orange.',
+      'I have reloaded this page 112 times. It has been orange twice. I do not need help. I need one more reload.'] }
+  ];
+  var NAMES = ['margin_enjoyer', 'deg_of_freedom', 'teal_again', 'not_a_robot_404', 'specdraft_reader', 'oklch_or_bust', 'grid_gap_gremlin', 'reload_regular', 'hover_state', 'em_dash_hater'];
+  var REPLIES = [
+    'came here to say this',
+    'it was purple for me. purple.',
+    'this is the third time I have read this and the letters were tilted differently every time',
+    'my grandmother also set margins by hand. we may be related',
+    'the cards are crooked and I have decided to be at peace with it',
+    'reloaded 9 times and finally got the big bold title. worth it',
+    'you can’t random() a font family and honestly that’s for the best',
+    'printed this out and the printer asked me which version',
+    'is this the same post as yesterday? it looks completely different',
+    'bookmarked. will not be able to find it again because it looks different',
+    'every copy of this I have seen is a slightly different size',
+    'first'
+  ];
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  var pastaIndex = 0;
+  function renderContent() {
+    var last = -1;
+    try { last = parseInt(sessionStorage.getItem('nt-last'), 10); } catch (e) {}
+    do { pastaIndex = Math.floor(Math.random() * PASTAS.length); } while (PASTAS.length > 1 && pastaIndex === last);
+    try { sessionStorage.setItem('nt-last', String(pastaIndex)); } catch (e) {}
+    var pasta = PASTAS[pastaIndex];
+
+    document.getElementById('kicker').textContent = 'Copypasta #' + (1000 + Math.floor(Math.random() * 9000)) + ' · ' + (pastaIndex + 1) + ' of ' + PASTAS.length;
+
+    // One span per letter (grouped in words so lines still wrap) so each letter gets its own random() rotation.
+    title.innerHTML = '';
+    title.setAttribute('aria-label', pasta.t.trim());
+    pasta.t.trim().split(' ').forEach(function (w, i) {
+      if (i) title.appendChild(document.createTextNode(' '));
+      var word = document.createElement('span');
+      word.className = 'word'; word.setAttribute('aria-hidden', 'true');
+      w.split('').forEach(function (c) {
+        var s = document.createElement('span'); s.className = 'ch'; s.textContent = c; word.appendChild(s);
+      });
+      title.appendChild(word);
+    });
+
+    var body = document.getElementById('pasta'); body.innerHTML = '';
+    pasta.p.forEach(function (line) { var p = document.createElement('p'); p.textContent = line; body.appendChild(p); });
+
+    var list = document.getElementById('replies'); list.innerHTML = '';
+    var names = shuffle(NAMES), texts = shuffle(REPLIES);
+    var n = 3 + Math.floor(Math.random() * 3);
+    for (var i = 0; i < n; i++) {
+      var li = document.createElement('li'); li.className = 'card';
+      var mins = 1 + Math.floor(Math.random() * 59);
+      li.innerHTML = '<span class="date"></span><h3></h3><p></p>';
+      li.children[0].textContent = 'Reply #' + (i + 1) + ' · ' + mins + ' min ago';
+      li.children[1].textContent = '@' + names[i];
+      li.children[2].textContent = texts[i];
+      list.appendChild(li);
+    }
+  }
+  renderContent();
+
+  document.getElementById('copyBtn').addEventListener('click', function (ev) {
+    ev.preventDefault();
+    var btn = ev.currentTarget, text = PASTAS[pastaIndex].p.join('\n\n');
+    var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy this pasta'; }, 1600); };
+    var fallback = function () { var r = document.createRange(); r.selectNodeContents(document.getElementById('pasta')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Selected, press Ctrl+C'; };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  });
+
+  var native = false;
+  try { native = CSS.supports('rotate', 'random(0deg, 10deg)'); } catch (e) {}
+  supportChip.textContent = native ? 'Native CSS random()' : 'JS stand-in: this browser lacks random()';
+  supportChip.className = 'chip ' + (native ? 'native' : 'standin');
+  if (!native) {
+    modeNote.innerHTML = 'Your browser does not support <code>random()</code> yet, so a small script fills the same ranges instead. In a browser that supports it, the stylesheet alone does this and the script stays out of the way.';
+  }
+
+  // JS stand-in: the same ranges as the stylesheet, written to custom properties the CSS falls back to.
+  function R(min, max, step) {
+    var v = min + Math.random() * (max - min);
+    if (step) v = min + Math.round((v - min) / step) * step;
+    return Math.round(v * 1000) / 1000;
+  }
+  var plan = [
+    ['#site', { '--js-hue': function () { return R(0, 360) + 'deg'; }, '--js-offset': function () { return R(90, 270, 30) + 'deg'; } }],
+    ['.blob', {
+      '--js-bw': function () { return R(8, 22) + 'rem'; }, '--js-bx': function () { return R(-5, 75) + '%'; },
+      '--js-by': function () { return R(-15, 45) + '%'; }, '--js-brot': function () { return R(0, 90) + 'deg'; },
+      '--js-bdur': function () { return R(6, 14) + 's'; },
+      '--js-br': function () { return [1, 2, 3, 4].map(function () { return R(20, 50) + '%'; }).join(' '); }
+    }],
+    ['#title', { '--js-h1': function () { return R(3, 8) + 'rem'; }, '--js-h1w': function () { return R(300, 800, 100); }, '--js-h1ls': function () { return R(-0.05, 0.08) + 'em'; } }],
+    ['#title .ch', { '--js-r': function () { return R(-10, 10) + 'deg'; }, '--js-y': function () { return R(-0.12, 0.12) + 'em'; } }],
+    ['.lede', { '--js-lede': function () { return R(1, 1.35) + 'rem'; } }],
+    ['.cta a', { '--js-btn': function () { return R(0, 26) + 'px'; } }],
+    ['#replies', { '--js-gap': function () { return R(0.75, 2.5) + 'rem'; } }],
+    ['.card', {
+      '--js-bw2': function () { return R(1, 5, 1) + 'px'; }, '--js-rad': function () { return R(0, 30) + 'px'; },
+      '--js-pad': function () { return R(0.9, 2) + 'rem'; }, '--js-crot': function () { return R(-3, 3) + 'deg'; }
+    }]
+  ];
+  function jsRoll() {
+    plan.forEach(function (p) {
+      document.querySelectorAll(p[0]).forEach(function (el) {
+        for (var k in p[1]) el.style.setProperty(k, p[1][k]());
+      });
+    });
+  }
+
+  // Discrete choices: layout and typeface. random() cannot pick between these.
+  var layouts = ['stack', 'split', 'poster'];
+  var faces = ['"Bricolage Grotesque"', '"Fraunces"', '"Syne"', '"Space Grotesk"', '"Unbounded"'];
+  function applyLayout() {
+    if (toggle.checked) {
+      site.dataset.layout = pick(layouts);
+      site.style.setProperty('--font-display', pick(faces) + ', "Inter", system-ui, sans-serif');
+    } else {
+      site.dataset.layout = 'stack';
+      site.style.removeProperty('--font-display');
+    }
+  }
+
+  try { toggle.checked = sessionStorage.getItem('nt-layout') === '1'; } catch (e) {}
+  toggle.addEventListener('change', function () {
+    try { sessionStorage.setItem('nt-layout', toggle.checked ? '1' : '0'); } catch (e) {}
+    applyLayout(); requestAnimationFrame(readout);
+  });
+
+  document.getElementById('reroll').addEventListener('click', function () {
+    if (native) { location.reload(); return; } // random() values are fixed for the life of the page
+    renderContent(); jsRoll(); applyLayout(); requestAnimationFrame(readout);
+  });
+
+  // Readout: show what the browser actually computed.
+  function cs(sel) { return getComputedStyle(document.querySelector(sel)); }
+  function round(v, unit) {
+    var n = parseFloat(v); return isNaN(n) ? v : (Math.round(n * 10) / 10) + (unit || '');
+  }
+  function hueOf(color) {
+    var m = /oklch\(\s*[\d.]+%?\s+[\d.]+\s+([\d.]+)/.exec(color);
+    return m ? Math.round(parseFloat(m[1])) + '°' : color;
+  }
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function readout() {
+    var s = cs('#site'), h = cs('#title'), c = cs('.card'), e = cs('#replies'), b = cs('.blob');
+    var letters = Array.prototype.map.call(document.querySelectorAll('#title .ch'), function (el) { return round(getComputedStyle(el).rotate); }).slice(0, 8).join(' · ') + ' …';
+    var cards = Array.prototype.map.call(document.querySelectorAll('.card'), function (el) { return round(getComputedStyle(el).rotate); }).join(' · ');
+    var accent = cs('.card .date').color;
+    var rows = [
+      ['Text', 'JS pick (random() can’t choose text)', 'pasta ' + (pastaIndex + 1) + ' of ' + PASTAS.length + ', ' + document.querySelectorAll('.card').length + ' replies'],
+      ['Page hue', 'random(--hue-key, 0deg, 360deg)', '<span class="sw" style="background:' + s.backgroundColor + '"></span>' + hueOf(s.backgroundColor)],
+      ['Accent colour', 'calc(hue + random(--offset-key, 90deg, 270deg, 30deg))', '<span class="sw" style="background:' + accent + '"></span>' + hueOf(accent)],
+      ['Title size', 'min(random(2.75rem, 6.5rem), 13vw)', round(h.fontSize, 'px')],
+      ['Title weight', 'random(300, 800, 100)', h.fontWeight],
+      ['Title tracking', 'random(-0.05em, 0.08em)', round(h.letterSpacing, 'px')],
+      ['Each letter’s tilt', 'random(-10deg, 10deg)', letters],
+      ['Each card’s tilt', 'random(-3deg, 3deg)', cards],
+      ['Card corner radius', 'random(0px, 30px)', round(c.borderTopLeftRadius, 'px')],
+      ['Card border', 'random(1px, 5px, 1px)', round(c.borderTopWidth, 'px')],
+      ['Gap between cards', 'random(0.75rem, 2.5rem)', round(e.rowGap, 'px')],
+      ['Blob size', 'random(8rem, 22rem)', round(b.width, 'px')],
+      ['Layout / typeface', toggle.checked ? 'JS pick from a list' : 'off (toggle above)', site.dataset.layout + ' / ' + h.fontFamily.split(',')[0].replace(/"/g, '')]
+    ];
+    document.getElementById('rows').innerHTML = rows.map(function (r) {
+      return '<tr><td>' + r[0] + '</td><td><code>' + esc(r[1]) + '</code></td><td class="val">' + r[2] + '</td></tr>';
+    }).join('');
+  }
+
+  if (!native) jsRoll();
+  applyLayout();
+  readout();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(readout);
+})();
+</script>
+</body>
+</html>
